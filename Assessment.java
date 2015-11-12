@@ -2,6 +2,7 @@
 
 import jdk.nashorn.internal.parser.JSONParser;
 import org.apache.commons.httpclient.HttpConnection;
+import org.joda.time.DateTime;
 
 import javax.json.*;
 import javax.json.stream.JsonParser;
@@ -9,9 +10,9 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.text.*;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class Assessment {
@@ -122,9 +123,9 @@ public class Assessment {
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Content-Type", "application/json");
 
-            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-                throw new RuntimeException("Failed! Error code: " + connection.getResponseCode());
-            }
+//            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+//                throw new RuntimeException("Failed! Error code: " + connection.getResponseCode());
+//            }
 
             BufferedReader reader = new BufferedReader(
                     new InputStreamReader(connection.getInputStream()));
@@ -180,7 +181,7 @@ public class Assessment {
 
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ParseException {
         JsonObject registrationJson = Json.createObjectBuilder()
                 .add("email", "ca.lawrence03@gmail.com")
                 .add("github", "https://github.com/clawrence8/code2040")
@@ -217,14 +218,21 @@ public class Assessment {
         System.out.println(verify);
 
         //Stage 4
-        //datestamp 1985-07-10T17:31:00.000Z
-        //Interval 6724097
-        String date = parseJson(post("http://challenge.code2040.org/api/time", getstring)).get(0);
-        DateFormat df = new SimpleDateFormat(date);
+        result = parseJson(post("http://challenge.code2040.org/api/time", getstring));
+        String date = result.get(0);
+        int interval = Integer.parseInt(result.get(1));
+        DateTime dt = DateTime.parse(date);
+        dt = dt.plusSeconds(interval);
 
+        System.out.println(dt);
+        System.out.println(date);
 
+        JsonObject validateDate = Json.createObjectBuilder().add("token", token)
+                .add("datestamp", dt.toString()).build();
 
+        String check = parseJson(post("http://challenge.code2040.org/api/validatetime", validateDate)).get(0);
 
+        parseJson(post("http://challenge.code2040.org/api/status", getstring));
     }
 
 
