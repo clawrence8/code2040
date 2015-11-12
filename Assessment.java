@@ -10,6 +10,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Assessment {
 
@@ -41,12 +43,12 @@ public class Assessment {
         return new String(letters);
     }
 
-    public static int needleInHaystack(String string, String[] haystack) {
+    public static int needleInHaystack(String string, ArrayList<String> haystack) {
         if (string.equals(null) || haystack.equals(null)) {
             return -1;
         }
-        for (int i = 0; i < haystack.length; i++) {
-            if (haystack[i].equals(string)) {
+        for (int i = 0; i < haystack.size() - 1; i++) {
+            if (haystack.get(i).equals(string)) {
                 return i;
             }
         }
@@ -152,14 +154,17 @@ public class Assessment {
         return null;
     }
 
-    public static String parseJson(String json) {
+    public static ArrayList<String> parseJson(String json) {
         String ans = null;
+        ArrayList<String> list = new ArrayList<>();
         JsonParser parser = Json.createParser(new StringReader(json));
         while (parser.hasNext()) {
             JsonParser.Event event = parser.next();
             switch (event) {
                 case START_ARRAY:
+                    //System.out.println("Start Array: " +  event);
                 case END_ARRAY:
+                    //System.out.println("End Array: " +  event);
                 case START_OBJECT:
                 case END_OBJECT:
                 case VALUE_FALSE:
@@ -175,12 +180,12 @@ public class Assessment {
                 case VALUE_NUMBER:
                     System.out.println(event.toString() + " " +
                             parser.getString());
-                    ans = parser.getString();
+                    list.add(parser.getString());
 
                     break;
             }
         }
-        return ans;
+        return list;
     }
 
 
@@ -193,14 +198,24 @@ public class Assessment {
 
 
         Assessment assessment = new Assessment();
-        token = parseJson(post(REGISTRATION_ENDPOINT, registrationJson));
+        ArrayList<String> result = parseJson(post(REGISTRATION_ENDPOINT, registrationJson));
+        token = result.get(result.size() - 1);
 
+        //Stage 1
         JsonObject getstring = Json.createObjectBuilder().add("token", token).build();
-        String myString = parseJson(post(REVERSE_ENDPOINT, getstring));
-        String rev = stringReverse(myString);
-        JsonObject validateString = Json.createObjectBuilder().add("token", token)
-                .add("string", rev).build();
-        String revResult = parseJson(post(REVERSE_VALIDATE,validateString));
+//        String myString = parseJson(post(REVERSE_ENDPOINT, getstring));
+//        String rev = stringReverse(myString);
+//        JsonObject validateString = Json.createObjectBuilder().add("token", token)
+//                .add("string", rev).build();
+//        String revResult = parseJson(post(REVERSE_VALIDATE,validateString));
+
+        //Stage2
+        result = parseJson(post("http://challenge.code2040.org/api/haystack", getstring));
+        String needle = result.get(result.size() - 1);
+        int index = needleInHaystack(needle, result);
+        JsonObject validateNeele = Json.createObjectBuilder().add("token", token).add("needle", index).build();
+        String needleResult = parseJson(post("http://challenge.code2040.org/api/validateneedle", validateNeele)).get(0);
+        System.out.println(needleResult);
 
 
     }
