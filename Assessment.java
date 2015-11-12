@@ -3,13 +3,14 @@
 import jdk.nashorn.internal.parser.JSONParser;
 import org.apache.commons.httpclient.HttpConnection;
 
-import javax.json.Json;
-import javax.json.JsonObject;
+import javax.json.*;
 import javax.json.stream.JsonParser;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,28 +57,18 @@ public class Assessment {
 
     }
 
-    public static String[] prefix(String myPrefix, String[] strings) {
+    public static JsonArray prefix(String myPrefix, ArrayList<String> strings) {
         if (myPrefix.equals(null) || strings.equals(null)) {
             return null;
         }
-        String[] temp = new String[strings.length];
-        int size = 0;
-        for (int i = 0; i < strings.length; i++) {
-            if (strings[i].startsWith(myPrefix)) {
-                temp[i] = strings[i];
-                size++;
+        JsonArrayBuilder builder = Json.createArrayBuilder();
+        for (int i = 0; i < strings.size() - 1; i++) {
+            if (!strings.get(i).startsWith(myPrefix)) {
+                builder.add(strings.get(i));
             }
         }
 
-        String[] ans = new String[size];
-        size = 0;
-        for (String s: strings) {
-            if (!s.equals(null)) {
-                ans[size] = s;
-                size++;
-            }
-        }
-        return ans;
+        return builder.build();
     }
 
     public static String datingGame(String datestamp, int seconds) {
@@ -155,7 +146,6 @@ public class Assessment {
     }
 
     public static ArrayList<String> parseJson(String json) {
-        String ans = null;
         ArrayList<String> list = new ArrayList<>();
         JsonParser parser = Json.createParser(new StringReader(json));
         while (parser.hasNext()) {
@@ -203,11 +193,11 @@ public class Assessment {
 
         //Stage 1
         JsonObject getstring = Json.createObjectBuilder().add("token", token).build();
-//        String myString = parseJson(post(REVERSE_ENDPOINT, getstring));
-//        String rev = stringReverse(myString);
-//        JsonObject validateString = Json.createObjectBuilder().add("token", token)
-//                .add("string", rev).build();
-//        String revResult = parseJson(post(REVERSE_VALIDATE,validateString));
+        String myString = parseJson(post(REVERSE_ENDPOINT, getstring)).get(0);
+        String rev = stringReverse(myString);
+        JsonObject validateString = Json.createObjectBuilder().add("token", token)
+                .add("string", rev).build();
+        String revResult = parseJson(post(REVERSE_VALIDATE,validateString)).get((0));
 
         //Stage2
         result = parseJson(post("http://challenge.code2040.org/api/haystack", getstring));
@@ -216,6 +206,23 @@ public class Assessment {
         JsonObject validateNeele = Json.createObjectBuilder().add("token", token).add("needle", index).build();
         String needleResult = parseJson(post("http://challenge.code2040.org/api/validateneedle", validateNeele)).get(0);
         System.out.println(needleResult);
+
+        //Stage 3
+        result = parseJson(post("http://challenge.code2040.org/api/prefix", getstring));
+        String myprefix = result.get(result.size() - 1);
+        JsonObject validatePrefix = Json.createObjectBuilder()
+                .add("token", token)
+                .add("array", prefix(myprefix, result)).build();
+        String verify = parseJson(post("http://challenge.code2040.org/api/validateprefix", validatePrefix)).get(0);
+        System.out.println(verify);
+
+        //Stage 4
+        //datestamp 1985-07-10T17:31:00.000Z
+        //Interval 6724097
+        String date = parseJson(post("http://challenge.code2040.org/api/time", getstring)).get(0);
+        DateFormat df = new SimpleDateFormat(date);
+
+
 
 
     }
